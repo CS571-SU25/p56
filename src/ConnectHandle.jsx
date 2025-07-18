@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import NotificationBanner from './NotificationBanner'; // ← Import here
+import NotificationBanner from './NotificationBanner';
 import "./ConnectHandle.css";
 import { getBaseURL } from "./utils"; 
 
