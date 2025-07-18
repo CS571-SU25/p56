@@ -1,0 +1,73 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.loginthingy {
+  background: rgba(31, 41, 55, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #f3f4f6;
+  animation: slideUp 0.3s ease-in-out;
+  transition: transform 0.2s ease;
+}
+
+.loginthingy h2 {
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  color: #e5e7eb;
+}
+
+.loginthingy input {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f9fafb;
+  outline: none;
+}
+
+.loginthingy input::placeholder {
+  color: rgba(209, 213, 219, 0.6);
+}
+
+.loginthingy button {
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.loginthingy button:hover {
+  background-color: #4f46e5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
