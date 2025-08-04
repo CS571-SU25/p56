@@ -4,7 +4,7 @@ import ConnectHandle from "./ConnectHandle";
 import StorageManager from "./StorageManager";
 import FolderNameModal from "./FolderNameModal";
 import ActivityPage from "./ActivityPage";
-import { getBaseURL } from "./utils"; 
+import { getBaseURL } from "./utils";
 
 import "./App.css";
 
@@ -75,12 +75,9 @@ function App() {
         <div className="sidebar-top">
           <button
             className={activeView === "Home" ? "active" : ""}
-            onClick={() => {
-              setActiveView("Home");
-              navigate("/");
-            }}
+            onClick={() => setActiveView("Home")}
           >
-            Home
+            <span>Home</span>
           </button>
 
           {Array.isArray(subdirs) &&
@@ -88,20 +85,17 @@ function App() {
               <button
                 key={dir}
                 className={activeView === dir ? "active" : ""}
-                onClick={() => {
-                  setActiveView(dir);
-                  navigate("/");
-                }}
+                onClick={() => setActiveView(dir)}
               >
-                {dir}
+                <span>{dir}</span>
               </button>
             ))}
 
           <button
-            className={window.location.pathname === "/activity" ? "active" : ""}
-            onClick={() => navigate("/activity")}
+            className={activeView === "ActivityLog" ? "active" : ""}
+            onClick={() => setActiveView("ActivityLog")}
           >
-            Activity Log
+            <span>Activity Log</span>
           </button>
         </div>
 
@@ -124,26 +118,18 @@ function App() {
       </aside>
 
       <main className="main-content">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <h3 className="welcome-header">Welcome, {credentials.username}!</h3>
-                <StorageManager
-                  subdirectory={activeView}
-                  username={credentials.username}
-                  refreshSubdirs={fetchSubdirs}
-                  setActiveView={setActiveView}
-                />
-              </>
-            }
+        <h3 className="welcome-header">Welcome, {credentials.username}!</h3>
+
+        {activeView === "ActivityLog" ? (
+          <ActivityPage username={credentials.username} />
+        ) : (
+          <StorageManager
+            subdirectory={activeView}
+            username={credentials.username}
+            refreshSubdirs={fetchSubdirs}
+            setActiveView={setActiveView}
           />
-          <Route
-            path="/activity"
-            element={<ActivityPage username={credentials.username} />}
-          />
-        </Routes>
+        )}
       </main>
 
       <FolderNameModal

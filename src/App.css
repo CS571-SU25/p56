@@ -14,6 +14,8 @@
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
   overflow: hidden;
+
+  flex-shrink: 0;
 }
 
 .sidebar-top {
@@ -95,4 +97,12 @@
 
 .logout-btn:hover {
   background-color: #ef4444;
+}
+
+.file-tile strong {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

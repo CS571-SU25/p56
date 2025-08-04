@@ -276,6 +276,7 @@ def get_activity_log():
                         "action": action,
                         "filename": filename
                     })
+        entries.sort(key=lambda x: x["timestamp"], reverse=True)
         return jsonify(entries)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
