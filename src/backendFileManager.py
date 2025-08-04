@@ -16,6 +16,16 @@ os.makedirs(BASE_DIR, exist_ok=True)
 ACCOUNT_DIR = os.path.join(Path.home(), "Downloads", "ACCOUNTS")
 os.makedirs(ACCOUNT_DIR, exist_ok=True)
 
+def log_activity(username, action, filename):
+    log_dir = os.path.join(BASE_DIR, "activity_logs")
+    os.makedirs(log_dir, exist_ok=True)
+    safe_name = secure_filename(username)
+    log_path = os.path.join(log_dir, f"{safe_name}.log")
+
+    with open(log_path, "a") as f:
+        timestamp = datetime.now().isoformat()
+        f.write(f"{timestamp} | {action} | {filename}\n")
+
 # Helpers
 def get_user_dir(username):
     safe_username = secure_filename(username)
@@ -140,6 +150,7 @@ def delete_file():
             return jsonify({"error": "File not found"}), 404
 
         os.remove(file_path)
+        log_activity(username, "delete", filename)
         return jsonify({"message": f"{filename} deleted successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -184,6 +195,7 @@ def download_file(filepath):
         if not os.path.isfile(file_path):
             return jsonify({"error": "File not found"}), 404
 
+        log_activity(username, "download", filename)
         return send_from_directory(directory, filename, as_attachment=True)
     except Exception as e:
         return jsonify({"error": str(e)}), 404
@@ -210,6 +222,7 @@ def upload_file():
         safe_name = secure_filename(file.filename)
         save_path = os.path.join(upload_dir, safe_name)
         file.save(save_path)
+        log_activity(username, "upload", safe_name)
 
         return jsonify({"message": f"Uploaded {safe_name} successfully"})
     except Exception as e:
@@ -236,6 +249,34 @@ def create_folder():
 
         os.makedirs(new_folder_path)
         return jsonify({"message": f"Folder '{folder_name}' created successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/activity-log', methods=['GET'])
+def get_activity_log():
+    username = request.args.get("username")
+    if not username:
+        return jsonify({"error": "Username required"}), 400
+
+    log_dir = os.path.join(BASE_DIR, "activity_logs")
+    log_path = os.path.join(log_dir, f"{secure_filename(username)}.log")
+
+    if not os.path.exists(log_path):
+        return jsonify([])  
+
+    try:
+        with open(log_path, "r") as f:
+            entries = []
+            for line in f:
+                parts = line.strip().split(" | ")
+                if len(parts) == 3:
+                    timestamp, action, filename = parts
+                    entries.append({
+                        "timestamp": timestamp,
+                        "action": action,
+                        "filename": filename
+                    })
+        return jsonify(entries)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

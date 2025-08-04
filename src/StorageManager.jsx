@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ConfirmModal from "./ConfirmModal";
 import "./StorageManager.css";
-import { getBaseURL } from "./utils"; 
+import { getBaseURL } from "./utils";
 
 function formatFileSize(bytes) {
   if (bytes === 0) return "0 B";
@@ -17,7 +17,9 @@ function StorageManager({ subdirectory, username, refreshSubdirs, setActiveView 
 
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingFolderDelete, setPendingFolderDelete] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!username) return;
@@ -71,29 +73,54 @@ function StorageManager({ subdirectory, username, refreshSubdirs, setActiveView 
   };
 
   const confirmDelete = () => {
-    const filename = pendingDelete;
     const baseParams = `username=${encodeURIComponent(username)}`;
-    const url =
-      subdirectory === "Home"
-        ? `${getBaseURL()}delete-file?${baseParams}&file=${encodeURIComponent(filename)}`
-        : `${getBaseURL()}delete-file?dir=${encodeURIComponent(subdirectory)}&${baseParams}&file=${encodeURIComponent(filename)}`;
 
-    fetch(url, { method: "DELETE" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          alert("Failed to delete file: " + data.error);
-        } else {
-          setFiles(prev => prev.filter(f => f.name !== filename));
-        }
-        setConfirmVisible(false);
-        setPendingDelete(null);
-      })
-      .catch((err) => {
-        alert("Delete failed: " + err.message);
-        setConfirmVisible(false);
-        setPendingDelete(null);
-      });
+    if (pendingFolderDelete) {
+      const url = `${getBaseURL()}delete-folder?username=${encodeURIComponent(
+        username
+      )}&dir=${encodeURIComponent(subdirectory)}`;
+
+      fetch(url, { method: "DELETE" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Failed to delete folder: " + data.error);
+          } else {
+            if (typeof refreshSubdirs === "function") refreshSubdirs();
+            if (typeof setActiveView === "function") setActiveView("Home");
+          }
+          setConfirmVisible(false);
+          setPendingFolderDelete(false);
+        })
+        .catch((err) => {
+          alert("Delete failed: " + err.message);
+          setConfirmVisible(false);
+          setPendingFolderDelete(false);
+        });
+    } else if (pendingDelete) {
+      const filename = pendingDelete;
+      const url =
+        subdirectory === "Home"
+          ? `${getBaseURL()}delete-file?${baseParams}&file=${encodeURIComponent(filename)}`
+          : `${getBaseURL()}delete-file?dir=${encodeURIComponent(subdirectory)}&${baseParams}&file=${encodeURIComponent(filename)}`;
+
+      fetch(url, { method: "DELETE" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Failed to delete file: " + data.error);
+          } else {
+            setFiles(prev => prev.filter(f => f.name !== filename));
+          }
+          setConfirmVisible(false);
+          setPendingDelete(null);
+        })
+        .catch((err) => {
+          alert("Delete failed: " + err.message);
+          setConfirmVisible(false);
+          setPendingDelete(null);
+        });
+    }
   };
 
   const handleUpload = (fileList) => {
@@ -158,25 +185,9 @@ function StorageManager({ subdirectory, username, refreshSubdirs, setActiveView 
   };
 
   const handleDeleteCurrentFolder = () => {
-    const confirmed = window.confirm(`Are you sure you want to delete the folder "${subdirectory}"?`);
-    if (!confirmed || subdirectory === "Home") return;
-
-    const baseParams = `username=${encodeURIComponent(username)}`;
-    const url = `${getBaseURL()}delete-folder?username=${encodeURIComponent(
-      username
-    )}&dir=${encodeURIComponent(subdirectory)}`;
-
-    fetch(url, { method: "DELETE" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          alert("Failed to delete folder: " + data.error);
-        } else {
-          if (typeof refreshSubdirs === "function") refreshSubdirs();
-          if (typeof setActiveView === "function") setActiveView("Home");
-        }
-      })
-      .catch((err) => alert("Delete failed: " + err.message));
+    if (subdirectory === "Home") return;
+    setPendingFolderDelete(true);
+    setConfirmVisible(true);
   };
 
   return (
@@ -220,11 +231,27 @@ function StorageManager({ subdirectory, username, refreshSubdirs, setActiveView 
           ))}
 
           <div
-            className="file-tile upload-tile"
+            className="file-tile upload-tile drop-zone"
             onClick={() => document.getElementById("upload-input").click()}
-            style={{ cursor: "pointer" }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleUpload(e.dataTransfer.files);
+            }}
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              border: "2px dashed #aaa",
+              padding: "20px",
+              borderRadius: "10px",
+              color: "#aaa"
+            }}
           >
-            <span style={{ fontSize: "4rem", color: "#aaa" }}>+</span>
+            <span style={{ fontSize: "3rem" }}>📁</span>
+            <span>Click or drop files here!</span>
           </div>
 
           <input
@@ -237,12 +264,19 @@ function StorageManager({ subdirectory, username, refreshSubdirs, setActiveView 
         </div>
       )}
 
-
       <ConfirmModal
         visible={confirmVisible}
-        onClose={() => setConfirmVisible(false)}
+        onClose={() => {
+          setConfirmVisible(false);
+          setPendingDelete(null);
+          setPendingFolderDelete(false);
+        }}
         onConfirm={confirmDelete}
-        message={`Are you sure you want to delete "${pendingDelete}"?`}
+        message={
+          pendingFolderDelete
+            ? `Are you sure you want to delete the folder "${subdirectory}"?`
+            : `Are you sure you want to delete "${pendingDelete}"?`
+        }
       />
 
 

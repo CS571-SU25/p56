@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import ConnectHandle from "./ConnectHandle";
 import StorageManager from "./StorageManager";
 import FolderNameModal from "./FolderNameModal";
+import ActivityPage from "./ActivityPage";
 import { getBaseURL } from "./utils"; 
 
 import "./App.css";
@@ -11,16 +13,7 @@ function App() {
   const [activeView, setActiveView] = useState("Home");
   const [subdirs, setSubdirs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-
-  const [serverMode, setServerMode] = useState(() => localStorage.getItem("serverMode") || "local");
-  useEffect(() => {
-    localStorage.setItem("serverMode", serverMode);
-  }, [serverMode]);
-
-  const toggleServerMode = () => {
-    setServerMode((prev) => (prev === "local" ? "lila" : "local"));
-  };
-
+  const navigate = useNavigate();
 
   const fetchSubdirs = () => {
     if (!credentials) return;
@@ -42,12 +35,14 @@ function App() {
 
   const handleLoginSubmit = ({ username, password }) => {
     setCredentials({ username, password });
+    navigate("/"); // ✅ Redirect to home
   };
 
   const handleLogout = () => {
     setCredentials(null);
     setActiveView("Home");
     setSubdirs([]);
+    navigate("/"); // ✅ Redirect to home
   };
 
   const handleCreateFolder = (folderName) => {
@@ -70,83 +65,93 @@ function App() {
       });
   };
 
+  if (!credentials) {
+    return <ConnectHandle onSubmit={handleLoginSubmit} />;
+  }
+
   return (
-    <>
-      {!credentials && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            textAlign: "center",
-            zIndex: 99999,
-          }}
-        >
+    <div className="app-container">
+      <aside className="sidebar">
+        <div className="sidebar-top">
+          <button
+            className={activeView === "Home" ? "active" : ""}
+            onClick={() => {
+              setActiveView("Home");
+              navigate("/");
+            }}
+          >
+            Home
+          </button>
+
+          {Array.isArray(subdirs) &&
+            subdirs.map((dir) => (
+              <button
+                key={dir}
+                className={activeView === dir ? "active" : ""}
+                onClick={() => {
+                  setActiveView(dir);
+                  navigate("/");
+                }}
+              >
+                {dir}
+              </button>
+            ))}
+
+          <button
+            className={window.location.pathname === "/activity" ? "active" : ""}
+            onClick={() => navigate("/activity")}
+          >
+            Activity Log
+          </button>
         </div>
-      )}
 
-      {!credentials && <ConnectHandle onSubmit={handleLoginSubmit} />}
-
-      {credentials && (
-        <div className="app-container">
-          <aside className="sidebar">
-            <div className="sidebar-top">
-              <button
-                className={activeView === "Home" ? "active" : ""}
-                onClick={() => setActiveView("Home")}
-              >
-                <span>Home</span>
-              </button>
-
-              {Array.isArray(subdirs) &&
-                subdirs.map((dir) => (
-                  <button
-                    key={dir}
-                    className={activeView === dir ? "active" : ""}
-                    onClick={() => setActiveView(dir)}
-                  >
-                    <span>{dir}</span>
-                  </button>
-                ))}
-            </div>
-
-            <div className="sidebar-bottom">
-              <button
-                className="logout-btn"
-                style={{ backgroundColor: "#2563eb", marginTop: "12px" }}
-                onClick={() => setModalVisible(true)}
-              >
-                Add Folder
-              </button>
-              <button
-                className="logout-btn"
-                onClick={handleLogout}
-                style={{ backgroundColor: "#eb2525ff", marginTop: "12px" }}
-              >
-                Logout
-              </button>
-            </div>
-          </aside>
-
-          <main className="main-content">
-            <h3 className="welcome-header">Welcome, {credentials.username}!</h3>
-            <StorageManager
-              subdirectory={activeView}
-              username={credentials.username}
-              refreshSubdirs={fetchSubdirs}
-              setActiveView={setActiveView}
-            />
-          </main>
+        <div className="sidebar-bottom">
+          <button
+            className="logout-btn"
+            style={{ backgroundColor: "#2563eb", marginTop: "12px" }}
+            onClick={() => setModalVisible(true)}
+          >
+            Add Folder
+          </button>
+          <button
+            className="logout-btn"
+            onClick={handleLogout}
+            style={{ backgroundColor: "#eb2525ff", marginTop: "12px" }}
+          >
+            Logout
+          </button>
         </div>
-      )}
+      </aside>
 
+      <main className="main-content">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <h3 className="welcome-header">Welcome, {credentials.username}!</h3>
+                <StorageManager
+                  subdirectory={activeView}
+                  username={credentials.username}
+                  refreshSubdirs={fetchSubdirs}
+                  setActiveView={setActiveView}
+                />
+              </>
+            }
+          />
+          <Route
+            path="/activity"
+            element={<ActivityPage username={credentials.username} />}
+          />
+        </Routes>
+      </main>
 
       <FolderNameModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSubmit={handleCreateFolder}
       />
-    </>
+    </div>
   );
 }
 
